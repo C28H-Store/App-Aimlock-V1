@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aimlock By C28H</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #000000; color: #ffffff; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 15px; }
+
+        .app-card { background: #0a0a0a; border: 1px solid #222222; border-radius: 24px; width: 100%; max-width: 380px; padding: 24px 20px; box-shadow: 0 0 40px rgba(255, 255, 255, 0.03); position: relative; }
+
+        /* SCREEN 1: LOGIN KEY */
+        #loginScreen { text-align: center; }
+        .decor-header { margin-bottom: 28px; }
+        .decor-title { font-size: 22px; font-weight: 900; letter-spacing: 1px; color: #ffffff; text-transform: uppercase; }
+        .decor-subtitle { font-size: 12px; color: #666666; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
+        .input-box { width: 100%; padding: 16px; background-color: #111111; border: 1px solid #262626; border-radius: 14px; color: #ffffff; text-align: center; font-size: 15px; margin-bottom: 14px; outline: none; transition: border-color 0.3s; }
+        .input-box:focus { border-color: #ffffff; }
+        .btn-active { width: 100%; padding: 16px; background-color: #ffffff; color: #000000; font-weight: 800; border: none; border-radius: 14px; font-size: 15px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: opacity 0.2s; }
+        .btn-active:active { opacity: 0.8; }
+        .info-desc { font-size: 12px; color: #777777; line-height: 1.6; border-top: 1px solid #1a1a1a; padding-top: 18px; margin-top: 20px; }
+        .info-desc span { color: #ffffff; font-weight: bold; }
+
+        /* SCREEN 2: GAME SELECTION */
+        #selectScreen { display: none; text-align: center; }
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .brand-logo { font-weight: 900; font-size: 16px; color: #ffffff; letter-spacing: 1px; }
+        .timer-box { font-size: 11px; color: #888888; background: #111111; padding: 6px 12px; border-radius: 20px; border: 1px solid #222222; }
+        .mode-btn { width: 100%; padding: 18px; background-color: #111111; border: 1px solid #222222; border-radius: 16px; color: #ffffff; font-size: 16px; font-weight: 700; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+        .mode-btn:hover { background-color: #ffffff; color: #000000; }
+
+        /* SCREEN 3: MENU AIMLOCK (VERTICAL) */
+        #menuScreen { display: none; }
+        .menu-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid #1f1f1f; margin-bottom: 16px; }
+        .menu-title-box h2 { font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: 0.5px; }
+        .menu-title-box .status { font-size: 11px; color: #888888; margin-top: 2px; }
+        .admin-tag { background: #ffffff; color: #000000; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 12px; }
+
+        .vertical-switches { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .switch-row { background: #111111; border: 1px solid #222222; border-radius: 14px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .switch-info { text-align: left; }
+        .switch-title { font-size: 14px; font-weight: 700; color: #ffffff; }
+        .switch-sub { font-size: 11px; color: #666666; margin-top: 2px; }
+
+        .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #222222; transition: .3s; border-radius: 24px; border: 1px solid #333333; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: #666666; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: #ffffff; border-color: #ffffff; }
+        input:checked + .slider:before { transform: translateX(18px); background-color: #000000; }
+
+        .btn-activate-menu { width: 100%; padding: 16px; background-color: #ffffff; color: #000000; font-weight: 900; border: none; border-radius: 14px; font-size: 15px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* MODAL */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 999; padding: 20px; }
+        .modal-content { background: #0a0a0a; border: 1px solid #333333; width: 100%; max-width: 320px; padding: 24px; border-radius: 20px; text-align: center; box-shadow: 0 0 30px rgba(255,255,255,0.1); }
+        .modal-title { color: #ffffff; font-weight: 800; font-size: 16px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .modal-body { font-size: 12px; color: #aaaaaa; line-height: 1.6; margin-bottom: 20px; text-align: left; }
+        .modal-btn { background: #ffffff; color: #000000; border: none; padding: 12px 24px; font-weight: 800; border-radius: 10px; cursor: pointer; width: 100%; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <div class="app-card">
+        <!-- LOGIN SCREEN -->
+        <div id="loginScreen">
+            <div class="decor-header">
+                <div class="decor-title">App Aimlock By C28H</div>
+                <div class="decor-subtitle">C28H Store</div>
+            </div>
+            <input type="text" id="keyInput" class="input-box" placeholder="Nhập Key Tại Đây">
+            <button class="btn-active" onclick="validateKey()">Kích Hoạt</button>
+            <div class="info-desc">
+                Bạn Chưa Có Key Để Kích Hoạt ?<br>
+                Liên Hệ Ngay Cho Chúng Tôi :<br>
+                Zalo : <span>0981407586</span><br>
+                Discord : <span>@c28hlatoi</span>
+            </div>
+        </div>
+
+        <!-- SELECT GAME SCREEN -->
+        <div id="selectScreen">
+            <div class="top-header">
+                <div style="font-size: 11px; color: #666666;">Trạng Thái: <span style="color: #ffffff;">Đã Kích Hoạt</span></div>
+                <div class="brand-logo">C28H Aim</div>
+            </div>
+            <button class="mode-btn" onclick="openMenu('FF Thường')">FF Thường</button>
+            <button class="mode-btn" onclick="openMenu('FF Max')">FF Max</button>
+            <div class="timer-box" id="timeRemaining">Hạn dùng: Đang tính...</div>
+        </div>
+
+        <!-- AIMLOCK MENU SCREEN -->
+        <div id="menuScreen">
+            <div class="menu-header">
+                <div class="menu-title-box">
+                    <h2>AimLock V1</h2>
+                    <div class="status">System Status: Connected</div>
+                </div>
+                <div class="admin-tag">C28H</div>
+            </div>
+
+            <div class="vertical-switches">
+                <div class="switch-row">
+                    <div class="switch-info">
+                        <div class="switch-title">AimLock</div>
+                        <div class="switch-sub">Khóa tâm mục tiêu cực chuẩn</div>
+                    </div>
+                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                </div>
+
+                <div class="switch-row">
+                    <div class="switch-info">
+                        <div class="switch-title">Nhẹ Tâm</div>
+                        <div class="switch-sub">Giúp tâm ổn định, vuốt mượt mà</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+
+                <div class="switch-row">
+                    <div class="switch-info">
+                        <div class="switch-title">Fix Rung</div>
+                        <div class="switch-sub">Giảm rung lắc tối đa</div>
+                    </div>
+                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                </div>
+
+                <div class="switch-row">
+                    <div class="switch-info">
+                        <div class="switch-title">Fix Lố</div>
+                        <div class="switch-sub">Tối ưu thao tác cảm ứng</div>
+                    </div>
+                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                </div>
+
+                <div class="switch-row">
+                    <div class="switch-info">
+                        <div class="switch-title">Tối Ưu Máy</div>
+                        <div class="switch-sub">Giao diện tối ưu hiệu năng</div>
+                    </div>
+                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                </div>
+
+                <div class="switch-row">
+                    <div class="switch-info">
+                        <div class="switch-title">Bám Đầu</div>
+                        <div class="switch-sub">Tăng tốc độ phản hồi cảm ứng</div>
+                    </div>
+                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                </div>
+            </div>
+
+            <button class="btn-activate-menu" onclick="triggerActivation()">Kích Hoạt Menu</button>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP -->
+    <div id="noticeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Thông Báo</div>
+            <div class="modal-body">
+                Chào Mừng Bạn Đến Với App Aimlock By C28H<br><br>
+                Vào Game Rồi Chọn Chức Năng Nhé !<br><br>
+                Lưu Ý : Đây chỉ là app hỗ trợ kéo tâm nên bạn có thể yên tâm chơi mà không bị band<br><br>
+                Chúc bạn chơi vui vẻ !
+            </div>
+            <button class="modal-btn" onclick="closeModal()">Đã Hiểu</button>
+        </div>
+    </div>
+
+<script>
+    let timerInterval = null;
+
+    function validateKey() {
+        const inputKey = document.getElementById("keyInput").value.trim();
+        let keysData = JSON.parse(localStorage.getItem("C28H_VALID_KEYS")) || {};
+
+        if (!keysData[inputKey]) {
+            alert("Key Không Hợp Lệ");
+            return;
+        }
+
+        let keyObj = keysData[inputKey];
+        const now = Date.now();
+
+        if (!keyObj.expireTime) {
+            if (keyObj.durationHours === -1) {
+                keyObj.expireTime = -1;
+            } else {
+                keyObj.expireTime = now + (keyObj.durationHours * 3600 * 1000);
+            }
+            keyObj.used = true;
+            keysData[inputKey] = keyObj;
+            localStorage.setItem("C28H_VALID_KEYS", JSON.stringify(keysData));
+        }
+
+        if (keyObj.expireTime !== -1 && now > keyObj.expireTime) {
+            alert("Key đã hết hạn sử dụng! Vui lòng nhập key mới.");
+            return;
+        }
+
+        localStorage.setItem("C28H_ACTIVE_KEY", inputKey);
+        showSelectScreen(keyObj);
+    }
+
+    function showSelectScreen(keyObj) {
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("selectScreen").style.display = "block";
+
+        if (timerInterval) clearInterval(timerInterval);
+
+        if (keyObj.expireTime === -1) {
+            document.getElementById("timeRemaining").innerText = "Hạn dùng: Vĩnh Viễn";
+        } else {
+            timerInterval = setInterval(() => {
+                const now = Date.now();
+                const diff = keyObj.expireTime - now;
+
+                if (diff <= 0) {
+                    clearInterval(timerInterval);
+                    alert("Hết thời gian sử dụng! Hệ thống sẽ đưa bạn về màn hình đăng nhập.");
+                    localStorage.removeItem("C28H_ACTIVE_KEY");
+                    location.reload();
+                    return;
+                }
+
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                document.getElementById("timeRemaining").innerText = `Hạn dùng: ${hours}h ${minutes}m ${seconds}s`;
+            }, 1000);
+        }
+    }
+
+    function openMenu(mode) {
+        document.getElementById("noticeModal").style.display = "flex";
+    }
+
+    function closeModal() {
+        document.getElementById("noticeModal").style.display = "none";
+        document.getElementById("selectScreen").style.display = "none";
+        document.getElementById("menuScreen").style.display = "block";
+    }
+
+    function triggerActivation() {
+        alert("Kích hoạt thành công!");
+    }
+
+    window.onload = function() {
+        const activeKey = localStorage.getItem("C28H_ACTIVE_KEY");
+        if (activeKey) {
+            let keysData = JSON.parse(localStorage.getItem("C28H_VALID_KEYS")) || {};
+            if (keysData[activeKey]) {
+                const keyObj = keysData[activeKey];
+                if (keyObj.expireTime === -1 || Date.now() < keyObj.expireTime) {
+                    showSelectScreen(keyObj);
+                }
+            }
+        }
+    };
+</script>
+
+</body>
+</html>

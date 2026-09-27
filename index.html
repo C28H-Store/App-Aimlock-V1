@@ -169,57 +169,95 @@
     </div>
 
 <script>
+    const SECRET_SALT = "C28H_AIMLOCK_2026_SECRET";
     let timerInterval = null;
+
+    function generateChecksum(type, rand5) {
+        let str = type + rand5 + SECRET_SALT;
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash << 5) - hash + str.charCodeAt(i);
+            hash |= 0;
+        }
+        let hex = Math.abs(hash).toString(36);
+        while (hex.length < 5) hex += "x";
+        return hex.substring(0, 5);
+    }
+
+    function parseAndVerifyKey(keyStr) {
+        // Cấu trúc: aimlockc28h-(type)-(rand5+checksum)
+        const parts = keyStr.split('-');
+        if (parts.length !== 3 || parts[0] !== "aimlockc28h") return null;
+
+        const type = parts[1];
+        const code = parts[2];
+        if (code.length !== 10) return null;
+
+        const rand5 = code.substring(0, 5);
+        const checksum = code.substring(5, 10);
+
+        if (generateChecksum(type, rand5) !== checksum) return null;
+
+        let durationHours = 0;
+        if (type === 'gio') durationHours = 1;
+        else if (type === 'ngay') durationHours = 24;
+        else if (type === 'tuan') durationHours = 168;
+        else if (type === 'thang') durationHours = 720;
+        else if (type === 'vv') durationHours = -1;
+        else return null;
+
+        return { type, durationHours };
+    }
 
     function validateKey() {
         const inputKey = document.getElementById("keyInput").value.trim();
-        let keysData = JSON.parse(localStorage.getItem("C28H_VALID_KEYS")) || {};
+        const keyInfo = parseAndVerifyKey(inputKey);
 
-        if (!keysData[inputKey]) {
+        if (!keyInfo) {
             alert("Key Không Hợp Lệ");
             return;
         }
 
-        let keyObj = keysData[inputKey];
+        let savedData = JSON.parse(localStorage.getItem("C28H_USED_KEYS")) || {};
         const now = Date.now();
+        let expireTime = savedData[inputKey];
 
-        if (!keyObj.expireTime) {
-            if (keyObj.durationHours === -1) {
-                keyObj.expireTime = -1;
+        if (!expireTime) {
+            if (keyInfo.durationHours === -1) {
+                expireTime = -1;
             } else {
-                keyObj.expireTime = now + (keyObj.durationHours * 3600 * 1000);
+                expireTime = now + (keyInfo.durationHours * 3600 * 1000);
             }
-            keyObj.used = true;
-            keysData[inputKey] = keyObj;
-            localStorage.setItem("C28H_VALID_KEYS", JSON.stringify(keysData));
+            savedData[inputKey] = expireTime;
+            localStorage.setItem("C28H_USED_KEYS", JSON.stringify(savedData));
         }
 
-        if (keyObj.expireTime !== -1 && now > keyObj.expireTime) {
-            alert("Key đã hết hạn sử dụng! Vui lòng nhập key mới.");
+        if (expireTime !== -1 && now > expireTime) {
+            alert("Key đã hết hạn sử dụng!");
             return;
         }
 
-        localStorage.setItem("C28H_ACTIVE_KEY", inputKey);
-        showSelectScreen(keyObj);
+        localStorage.setItem("C28H_CURRENT_ACTIVE", JSON.stringify({ key: inputKey, expireTime }));
+        showSelectScreen(expireTime);
     }
 
-    function showSelectScreen(keyObj) {
+    function showSelectScreen(expireTime) {
         document.getElementById("loginScreen").style.display = "none";
         document.getElementById("selectScreen").style.display = "block";
 
         if (timerInterval) clearInterval(timerInterval);
 
-        if (keyObj.expireTime === -1) {
+        if (expireTime === -1) {
             document.getElementById("timeRemaining").innerText = "Hạn dùng: Vĩnh Viễn";
         } else {
             timerInterval = setInterval(() => {
                 const now = Date.now();
-                const diff = keyObj.expireTime - now;
+                const diff = expireTime - now;
 
                 if (diff <= 0) {
                     clearInterval(timerInterval);
-                    alert("Hết thời gian sử dụng! Hệ thống sẽ đưa bạn về màn hình đăng nhập.");
-                    localStorage.removeItem("C28H_ACTIVE_KEY");
+                    alert("Hết thời gian sử dụng!");
+                    localStorage.removeItem("C28H_CURRENT_ACTIVE");
                     location.reload();
                     return;
                 }
@@ -247,14 +285,10 @@
     }
 
     window.onload = function() {
-        const activeKey = localStorage.getItem("C28H_ACTIVE_KEY");
-        if (activeKey) {
-            let keysData = JSON.parse(localStorage.getItem("C28H_VALID_KEYS")) || {};
-            if (keysData[activeKey]) {
-                const keyObj = keysData[activeKey];
-                if (keyObj.expireTime === -1 || Date.now() < keyObj.expireTime) {
-                    showSelectScreen(keyObj);
-                }
+        const activeSession = JSON.parse(localStorage.getItem("C28H_CURRENT_ACTIVE"));
+        if (activeSession) {
+            if (activeSession.expireTime === -1 || Date.now() < activeSession.expireTime) {
+                showSelectScreen(activeSession.expireTime);
             }
         }
     };

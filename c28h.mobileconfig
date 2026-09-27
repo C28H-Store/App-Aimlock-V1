@@ -22,8 +22,7 @@
             <key>PayloadVersion</key>
             <integer>1</integer>
             <key>URL</key>
-            <!-- THAY LINK GITHUB PAGES CỦA BẠN VÀO ĐÂY -->
-            <string>https://USERNAME.github.io/REPOSITORY_NAME/index.html</string>
+            <string>https://c28h-store.github.io/App-Aimlock-V1/index.html</string>
             <key>FullScreen</key>
             <true/>
             <key>IgnoreManifestScope</key>
